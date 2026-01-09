@@ -33,23 +33,27 @@ y = df["quality"]
 # Train/Test Split: 70/30
 # -----------------------------
 
-from sklearn.linear_model import Ridge
+from sklearn.ensemble import RandomForestRegressor
 
+# Train-test split (80/20)
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=7
+    X, y, test_size=0.2, random_state=42
 )
 
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+# No scaling for tree models
+X_train = X_train.values
+X_test = X_test.values
 
-model = Ridge(alpha=10.0, random_state=7)
+model = RandomForestRegressor(
+    n_estimators=50,
+    max_depth=10,
+    random_state=42,
+    n_jobs=-1
+)
 
-# ✅ THIS LINE WAS MISSING
 model.fit(X_train, y_train)
-
-# Evaluation
 y_pred = model.predict(X_test)
+
 
 
 
