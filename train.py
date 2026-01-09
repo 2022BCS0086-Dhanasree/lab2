@@ -43,10 +43,9 @@ X_test = scaler.transform(X_test)
 
 # -----------------------------
 # Model selection
-# (EDIT THIS FOR EACH EXPERIMENT)
 # -----------------------------
-model = LinearRegression()
-# model = Ridge(alpha=1.0)
+# model = LinearRegression()
+model = Ridge(alpha=1.0)
 # model = Lasso(alpha=0.01)
 
 model.fit(X_train, y_train)
