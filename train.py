@@ -27,26 +27,26 @@ df.columns = df.columns.str.strip()
 X = df.drop("quality", axis=1)
 y = df["quality"]
 
-from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.ensemble import RandomForestRegressor
 
-# Feature selection: top 8
-selector = SelectKBest(score_func=f_regression, k=8)
-X_selected = selector.fit_transform(X, y)
-
 X_train, X_test, y_train, y_test = train_test_split(
-    X_selected, y, test_size=0.2, random_state=42
+    X, y, test_size=0.2, random_state=99
 )
 
+X_train = X_train.values
+X_test = X_test.values
+
 model = RandomForestRegressor(
-    n_estimators=100,
-    max_depth=15,
-    random_state=42,
+    n_estimators=200,
+    min_samples_split=5,
+    max_features="sqrt",
+    random_state=99,
     n_jobs=-1
 )
 
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
+
 
 
 
