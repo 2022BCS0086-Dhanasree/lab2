@@ -27,6 +27,14 @@ df.columns = df.columns.str.strip()
 X = df.drop("quality", axis=1)
 y = df["quality"]
 
+# -----------------------------
+# EXP-04: Ridge Regression
+# StandardScaler + All features
+# Train/Test Split: 70/30
+# -----------------------------
+
+from sklearn.linear_model import Ridge
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=7
 )
@@ -36,6 +44,13 @@ X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
 model = Ridge(alpha=10.0, random_state=7)
+
+# ✅ THIS LINE WAS MISSING
+model.fit(X_train, y_train)
+
+# Evaluation
+y_pred = model.predict(X_test)
+
 
 
 # -----------------------------
