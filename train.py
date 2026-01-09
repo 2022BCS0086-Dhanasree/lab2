@@ -27,27 +27,16 @@ df.columns = df.columns.str.strip()
 X = df.drop("quality", axis=1)
 y = df["quality"]
 
-# -----------------------------
-# Train-test split
-# -----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y, test_size=0.3, random_state=7
 )
 
-# -----------------------------
-# Preprocessing
-# -----------------------------
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# -----------------------------
-# Model selection
-# -----------------------------
-# model = LinearRegression()
-model = Lasso(alpha=0.01)
+model = Ridge(alpha=10.0, random_state=7)
 
-model.fit(X_train, y_train)
 
 # -----------------------------
 # Evaluation
