@@ -27,26 +27,20 @@ df.columns = df.columns.str.strip()
 X = df.drop("quality", axis=1)
 y = df["quality"]
 
-# -----------------------------
-# EXP-04: Ridge Regression
-# StandardScaler + All features
-# Train/Test Split: 70/30
-# -----------------------------
-
+from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.ensemble import RandomForestRegressor
 
-# Train-test split (80/20)
+# Feature selection: top 8
+selector = SelectKBest(score_func=f_regression, k=8)
+X_selected = selector.fit_transform(X, y)
+
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X_selected, y, test_size=0.2, random_state=42
 )
 
-# No scaling for tree models
-X_train = X_train.values
-X_test = X_test.values
-
 model = RandomForestRegressor(
-    n_estimators=50,
-    max_depth=10,
+    n_estimators=100,
+    max_depth=15,
     random_state=42,
     n_jobs=-1
 )
