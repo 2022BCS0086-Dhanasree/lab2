@@ -15,10 +15,15 @@ os.makedirs("output/model", exist_ok=True)
 os.makedirs("output/results", exist_ok=True)
 
 # -----------------------------
-# Load dataset (local copy)
+# Load dataset (Wine Quality)
+# NOTE: UCI dataset uses ';' as separator
 # -----------------------------
-df = pd.read_csv("dataset/winequality.csv")
+df = pd.read_csv("dataset/winequality.csv", sep=";")
 
+# Clean column names (safety)
+df.columns = df.columns.str.strip()
+
+# Features and target
 X = df.drop("quality", axis=1)
 y = df["quality"]
 
@@ -38,6 +43,7 @@ X_test = scaler.transform(X_test)
 
 # -----------------------------
 # Model selection
+# (EDIT THIS FOR EACH EXPERIMENT)
 # -----------------------------
 model = LinearRegression()
 # model = Ridge(alpha=1.0)
@@ -57,7 +63,7 @@ print(f"MSE: {mse}")
 print(f"R2 Score: {r2}")
 
 # -----------------------------
-# Save model
+# Save trained model
 # -----------------------------
 joblib.dump(model, "output/model/model.pkl")
 
