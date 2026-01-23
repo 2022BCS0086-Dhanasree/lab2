@@ -4,9 +4,8 @@ import joblib
 import pandas as pd
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.ensemble import RandomForestRegressor
 
 # -----------------------------
 # Create output directories
@@ -15,29 +14,38 @@ os.makedirs("output/model", exist_ok=True)
 os.makedirs("output/results", exist_ok=True)
 
 # -----------------------------
-# Load dataset (Wine Quality)
-# NOTE: UCI dataset uses ';' as separator
+# Load dataset
 # -----------------------------
 df = pd.read_csv("dataset/winequality.csv", sep=";")
-
-# Clean column names (safety)
 df.columns = df.columns.str.strip()
 
-# Features and target
-X = df.drop("quality", axis=1)
+# -----------------------------
+# SELECT EXACT FEATURES USED IN app.py
+# -----------------------------
+FEATURE_COLUMNS = [
+    "fixed acidity",
+    "volatile acidity",
+    "citric acid",
+    "residual sugar",
+    "chlorides",
+    "pH",
+    "sulphates",
+    "alcohol"
+]
+
+X = df[FEATURE_COLUMNS]
 y = df["quality"]
 
-from sklearn.feature_selection import SelectKBest, f_regression
-from sklearn.ensemble import RandomForestRegressor
-
-# Feature selection: top 10
-selector = SelectKBest(score_func=f_regression, k=10)
-X_selected = selector.fit_transform(X, y)
-
+# -----------------------------
+# Train-test split
+# -----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X_selected, y, test_size=0.25, random_state=7
+    X, y, test_size=0.25, random_state=7
 )
 
+# -----------------------------
+# Train model
+# -----------------------------
 model = RandomForestRegressor(
     n_estimators=150,
     max_depth=12,
@@ -47,12 +55,6 @@ model = RandomForestRegressor(
 )
 
 model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-
-
-
-
-
 
 # -----------------------------
 # Evaluation
