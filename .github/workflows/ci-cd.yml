@@ -25,24 +25,22 @@ jobs:
 
       - name: Train model
         run: |
-          python lab2/train.py
-
+          python train.py
+      
       - name: Read metrics.json (log only)
         run: |
           python - << 'PY'
           import json
-          m = json.load(open("metrics.json"))
+          m = json.load(open("output/metrics.json"))
           print("metrics:", m)
           PY
-
+      
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: trained-model
-          path: |
-            model.pkl
-            metrics.json
-            results.json
+          path: output/
+
     
   deploy:
     needs: train
