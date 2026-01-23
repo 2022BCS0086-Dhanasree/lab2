@@ -31,7 +31,7 @@ jobs:
         run: |
           python - << 'PY'
           import json
-          m = json.load(open("output/metrics.json"))
+          m = json.load(open("output/results/metrics.json"))
           print("metrics:", m)
           PY
       
@@ -40,6 +40,7 @@ jobs:
         with:
           name: trained-model
           path: output/
+
 
     
   deploy:
@@ -62,23 +63,24 @@ jobs:
     - name: Compare metrics
       id: compare
       run: |
-        R2=$(jq '.r2_score' output/metrics.json)
-        MSE=$(jq '.mse' output/metrics.json)
-  
+        R2=$(jq '.r2_score' output/results/metrics.json)
+        MSE=$(jq '.mse' output/results/metrics.json)
+    
         echo "Current R2: $R2"
         echo "Best R2: $BEST_R2"
         echo "Current MSE: $MSE"
         echo "Best MSE: $BEST_MSE"
-  
+    
         if (( $(echo "$R2 <= $BEST_R2" | bc -l) )) || (( $(echo "$MSE >= $BEST_MSE" | bc -l) )); then
           echo "2022BCS0086----Metric did not improve"
           exit 0
         fi
-  
+    
         echo "deploy=true" >> $GITHUB_OUTPUT
       env:
         BEST_R2: ${{ vars.BEST_R2 }}
         BEST_MSE: ${{ vars.BEST_MSE }}
+
   
     - name: Login to Docker Hub
       if: steps.compare.outputs.deploy == 'true'
