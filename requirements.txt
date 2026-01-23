@@ -1,4 +1,7 @@
-numpy
+fastapi
+uvicorn
+numpy<2.0
 pandas
 scikit-learn
 joblib
+python-multipart
