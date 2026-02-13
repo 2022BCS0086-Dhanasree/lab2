@@ -1,0 +1,104 @@
+name: Train and Deploy (CI/CD)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  # =========================
+  # JOB 1: TRAIN (CI)
+  # =========================
+  train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Train model
+        run: |
+          python train.py
+
+      - name: Read metrics.json (log only)
+        run: |
+          python - << 'PY'
+          import json
+          m = json.load(open("output/results/metrics.json"))
+          print("metrics:", m)
+          PY
+
+      - name: Upload training artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: output/
+
+  # =========================
+  # JOB 2: DEPLOY (CD)
+  # =========================
+  deploy:
+    needs: train
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y jq bc
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: output/
+
+      - name: Compare metrics
+        id: compare
+        run: |
+          R2=$(jq '.r2_score' output/results/metrics.json)
+          MSE=$(jq '.mse' output/results/metrics.json)
+
+          echo "Current R2: $R2"
+          echo "Best R2: $BEST_R2"
+          echo "Current MSE: $MSE"
+          echo "Best MSE: $BEST_MSE"
+
+          if (( $(echo "$R2 <= $BEST_R2" | bc -l) )) || (( $(echo "$MSE >= $BEST_MSE" | bc -l) )); then
+            echo "2022BCS0086----Metric did not improve"
+            exit 0
+          fi
+
+          echo "deploy=true" >> $GITHUB_OUTPUT
+        env:
+          BEST_R2: ${{ vars.BEST_R2 }}
+          BEST_MSE: ${{ vars.BEST_MSE }}
+
+      - name: Prepare model for Docker
+        if: steps.compare.outputs.deploy == 'true'
+        run: |
+          cp output/model/model.pkl model.pkl
+
+      - name: Login to Docker Hub
+        if: steps.compare.outputs.deploy == 'true'
+        run: echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Image
+        if: steps.compare.outputs.deploy == 'true'
+        run: |
+          docker build -t dhanasree86/wine_predict_2022bcs0086:latest .
+          docker push dhanasree86/wine_predict_2022bcs0086:latest
