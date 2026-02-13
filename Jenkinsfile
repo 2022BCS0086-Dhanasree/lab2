@@ -5,13 +5,13 @@ pipeline {
         DOCKER_IMAGE = "dhanasree86/ml-model"
     }
 
-    stages {
+    // stages {
 
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/2022BCS0086-Dhanasree/lab2.git'
-            }
-        }
+    //     stage('Clone Repository') {
+    //         steps {
+    //             git 'https://github.com/2022BCS0086-Dhanasree/lab2.git'
+    //         }
+    //     }
 
         stage('Build Docker Image') {
             steps {
