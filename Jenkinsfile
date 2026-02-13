@@ -17,7 +17,7 @@ pipeline {
 
         stage('Train and Evaluate Model') {
             steps {
-                sh 'python train.py'
+                sh 'docker run --rm dhanasree86/ml-model python train.py'
             }
         }
 
