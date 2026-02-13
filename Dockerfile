@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY train.py .
 COPY app.py .
 COPY model.pkl .
+COPY dataset ./dataset
 
 EXPOSE 8000
 
