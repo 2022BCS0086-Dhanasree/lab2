@@ -26,7 +26,7 @@ pipeline {
                 sh '''
                 echo "Name: Dhanasree Gidijala"
                 echo "Roll No: 2022BCS0086"
-                cat metrics.txt
+                echo "Model metrics printed above in previous stage."
                 '''
             }
         }
