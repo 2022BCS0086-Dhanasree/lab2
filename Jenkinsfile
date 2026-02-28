@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "dhanasree86/ml-inference-api:latest"
         CONTAINER_NAME = "wine_test_container"
-        DOCKER_NETWORK = "bridge"
+        DOCKER_NETWORK = "mlops_network"
     }
 
     stages {
@@ -94,15 +94,6 @@ pipeline {
             steps {
                 sh "docker rm -f $CONTAINER_NAME || true"
             }
-        }
-    }
-
-    post {
-        success {
-            echo "✅ LAB 7 PASSED – Inference Validation Successful"
-        }
-        failure {
-            echo "❌ LAB 7 FAILED – Validation Error"
         }
     }
 }
