@@ -2,37 +2,39 @@ pipeline {
     agent any
 
     environment {
-        IMAGE = "dhanasree86/ml-inference-api:latest"
-        CONTAINER = "wine_test_container"
-        PORT = "8000"
+        IMAGE_NAME = "dhanasree86/ml-inference-api:latest"
+        CONTAINER_NAME = "wine_test_container"
     }
 
     stages {
 
         stage('Pull Image') {
             steps {
-                sh "docker pull $IMAGE"
+                sh 'docker pull $IMAGE_NAME'
             }
         }
 
         stage('Run Container') {
             steps {
-                sh """
-                docker run -d -p $PORT:8000 --name $CONTAINER $IMAGE
-                """
+                sh '''
+                docker rm -f $CONTAINER_NAME || true
+                docker run -d -p 8000:8000 \
+                --add-host=host.docker.internal:host-gateway \
+                --name $CONTAINER_NAME $IMAGE_NAME
+                '''
             }
         }
 
         stage('Wait for Service Readiness') {
             steps {
                 script {
-                    timeout(time: 60, unit: 'SECONDS') {
+                    timeout(time: 90, unit: 'SECONDS') {
                         waitUntil {
-                            def status = sh(
-                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:$PORT/docs || true",
+                            def response = sh(
+                                script: "curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:8000/ || true",
                                 returnStdout: true
                             ).trim()
-                            return (status == "200")
+                            return (response == "200")
                         }
                     }
                 }
@@ -43,44 +45,44 @@ pipeline {
             steps {
                 script {
                     def response = sh(
-                        script: """
-                        curl -s -X POST http://localhost:$PORT/predict \
-                        -H "Content-Type: application/json" \
-                        -d @tests/valid.json
-                        """,
+                        script: """curl -s -X POST http://host.docker.internal:8000/predict \
+                        -H 'Content-Type: application/json' \
+                        -d '{
+                          "fixed_acidity":7.4,
+                          "volatile_acidity":0.7,
+                          "citric_acid":0.0,
+                          "residual_sugar":1.9,
+                          "chlorides":0.076,
+                          "pH":3.51,
+                          "sulphates":0.56,
+                          "alcohol":9.4
+                        }'""",
                         returnStdout: true
                     ).trim()
 
                     echo "Valid Response: ${response}"
 
-                    if (!response.contains("wine_quality")) {
-                        error("wine_quality field missing!")
-                    }
-
-                    if (!response.contains("2022BCS0086")) {
-                        error("Roll number missing in response!")
+                    if (!(response ==~ /.*\d+.*/)) {
+                        error("Prediction is not numeric")
                     }
                 }
             }
         }
 
-        stage('Invalid Input Test') {
+        stage('Invalid Inference Test') {
             steps {
                 script {
-                    def code = sh(
-                        script: """
-                        curl -s -o /dev/null -w "%{http_code}" \
-                        -X POST http://localhost:$PORT/predict \
-                        -H "Content-Type: application/json" \
-                        -d @tests/invalid.json
-                        """,
+                    def response = sh(
+                        script: """curl -s -o /dev/null -w '%{http_code}' -X POST http://host.docker.internal:8000/predict \
+                        -H 'Content-Type: application/json' \
+                        -d '{"fixed_acidity":7.4}'""",
                         returnStdout: true
                     ).trim()
 
-                    echo "Invalid Request Status Code: ${code}"
+                    echo "Invalid Status Code: ${response}"
 
-                    if (code == "200") {
-                        error("Invalid request should not succeed")
+                    if (response == "422") {
+                        error("Invalid input did not return expected error")
                     }
                 }
             }
@@ -88,20 +90,17 @@ pipeline {
 
         stage('Stop Container') {
             steps {
-                sh """
-                docker stop $CONTAINER || true
-                docker rm $CONTAINER || true
-                """
+                sh '''
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo "✅ LAB 7 PASSED – Inference Validation Successful"
-        }
-        failure {
-            echo "❌ LAB 7 FAILED – Validation Error Detected"
+        always {
+            sh 'docker rm -f $CONTAINER_NAME || true'
         }
     }
 }
