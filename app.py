@@ -8,10 +8,9 @@ app = FastAPI()
 NAME = "Dhanasree Gidijala"
 ROLL_NO = "2022BCS0086"
 
-# Load trained model (trained with top 8 features)
+# Load trained model
 model = joblib.load("model.pkl")
 
-# Input schema – ONLY 8 FEATURES
 class WineFeatures(BaseModel):
     fixed_acidity: float
     volatile_acidity: float
@@ -22,14 +21,14 @@ class WineFeatures(BaseModel):
     sulphates: float
     alcohol: float
 
-@app.get("/")
-def home():
-    return {"status": "ok", "service": "wine-quality-inference"}
-    
+# Health endpoint (Required for Lab 7)
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/predict")
 def predict(f: WineFeatures):
 
-    # Arrange features in the SAME ORDER used during training
     x = np.array([[ 
         f.fixed_acidity,
         f.volatile_acidity,
@@ -47,5 +46,5 @@ def predict(f: WineFeatures):
     return {
         "name": NAME,
         "roll_no": ROLL_NO,
-        #"wine_quality": wine_quality
+        "prediction": wine_quality
     }
