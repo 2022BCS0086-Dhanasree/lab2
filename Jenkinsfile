@@ -28,11 +28,11 @@ pipeline {
                 script {
                     timeout(time: 90, unit: 'SECONDS') {
                         waitUntil {
-                            def response = sh(
-                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/ || true",
+                            def status = sh(
+                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health || true",
                                 returnStdout: true
                             ).trim()
-                            return (response == "200")
+                            return (status == "200")
                         }
                     }
                 }
@@ -46,7 +46,6 @@ pipeline {
                         script: """curl -s -X POST http://localhost:8000/predict \
                         -H 'Content-Type: application/json' \
                         -d '{
-                          
                               "fixed_acidity": 7.4,
                               "volatile_acidity": 0.7,
                               "citric_acid": 0.0,
@@ -55,7 +54,6 @@ pipeline {
                               "pH": 3.51,
                               "sulphates": 0.56,
                               "alcohol": 9.4
-
                         }'""",
                         returnStdout: true
                     ).trim()
@@ -99,6 +97,12 @@ pipeline {
     }
 
     post {
+        success {
+            echo "✅ LAB 7 PASSED – Inference Validation Successful"
+        }
+        failure {
+            echo "❌ LAB 7 FAILED – Validation Error"
+        }
         always {
             sh "docker rm -f $CONTAINER_NAME || true"
         }
