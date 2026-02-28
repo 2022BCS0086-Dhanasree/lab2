@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "dhanasree86/ml-inference-api:latest"
         CONTAINER_NAME = "wine_test_container"
+        DOCKER_NETWORK = "bridge"   // replace with your output
     }
 
     stages {
@@ -18,7 +19,10 @@ pipeline {
             steps {
                 sh """
                 docker rm -f $CONTAINER_NAME || true
-                docker run -d -p 8000:8000 --name $CONTAINER_NAME $IMAGE_NAME
+                docker run -d \
+                --network $DOCKER_NETWORK \
+                --name $CONTAINER_NAME \
+                $IMAGE_NAME
                 """
             }
         }
@@ -29,7 +33,7 @@ pipeline {
                     timeout(time: 90, unit: 'SECONDS') {
                         waitUntil {
                             def status = sh(
-                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health || true",
+                                script: "curl -s -o /dev/null -w '%{http_code}' http://$CONTAINER_NAME:8000/health || true",
                                 returnStdout: true
                             ).trim()
                             return (status == "200")
@@ -43,17 +47,17 @@ pipeline {
             steps {
                 script {
                     def response = sh(
-                        script: """curl -s -X POST http://localhost:8000/predict \
+                        script: """curl -s -X POST http://$CONTAINER_NAME:8000/predict \
                         -H 'Content-Type: application/json' \
                         -d '{
-                              "fixed_acidity": 7.4,
-                              "volatile_acidity": 0.7,
-                              "citric_acid": 0.0,
-                              "residual_sugar": 1.9,
-                              "chlorides": 0.076,
-                              "pH": 3.51,
-                              "sulphates": 0.56,
-                              "alcohol": 9.4
+                            "fixed_acidity": 7.4,
+                            "volatile_acidity": 0.7,
+                            "citric_acid": 0.0,
+                            "residual_sugar": 1.9,
+                            "chlorides": 0.076,
+                            "pH": 3.51,
+                            "sulphates": 0.56,
+                            "alcohol": 9.4
                         }'""",
                         returnStdout: true
                     ).trim()
@@ -71,7 +75,7 @@ pipeline {
             steps {
                 script {
                     def status = sh(
-                        script: """curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/predict \
+                        script: """curl -s -o /dev/null -w '%{http_code}' -X POST http://$CONTAINER_NAME:8000/predict \
                         -H 'Content-Type: application/json' \
                         -d '{"fixed_acidity":7.4}'""",
                         returnStdout: true
@@ -88,10 +92,7 @@ pipeline {
 
         stage('Stop Container') {
             steps {
-                sh """
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
-                """
+                sh "docker rm -f $CONTAINER_NAME || true"
             }
         }
     }
@@ -102,9 +103,6 @@ pipeline {
         }
         failure {
             echo "❌ LAB 7 FAILED – Validation Error"
-        }
-        always {
-            sh "docker rm -f $CONTAINER_NAME || true"
         }
     }
 }
