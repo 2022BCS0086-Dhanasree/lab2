@@ -48,5 +48,5 @@ def predict(f: WineFeatures):
     return {
         "name": NAME,
         "roll_no": ROLL_NO,
-        "wine_quality": wine_quality
+        #"wine_quality": wine_quality
     }
