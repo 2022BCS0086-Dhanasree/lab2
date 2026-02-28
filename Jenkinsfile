@@ -10,18 +10,16 @@ pipeline {
 
         stage('Pull Image') {
             steps {
-                sh 'docker pull $IMAGE_NAME'
+                sh "docker pull $IMAGE_NAME"
             }
         }
 
         stage('Run Container') {
             steps {
-                sh '''
+                sh """
                 docker rm -f $CONTAINER_NAME || true
-                docker run -d -p 8000:8000 \
-                --add-host=host.docker.internal:host-gateway \
-                --name $CONTAINER_NAME $IMAGE_NAME
-                '''
+                docker run -d -p 8000:8000 --name $CONTAINER_NAME $IMAGE_NAME
+                """
             }
         }
 
@@ -31,7 +29,7 @@ pipeline {
                     timeout(time: 90, unit: 'SECONDS') {
                         waitUntil {
                             def response = sh(
-                                script: "curl -s -o /dev/null -w '%{http_code}' http://host.docker.internal:8000/ || true",
+                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health || true",
                                 returnStdout: true
                             ).trim()
                             return (response == "200")
@@ -45,7 +43,7 @@ pipeline {
             steps {
                 script {
                     def response = sh(
-                        script: """curl -s -X POST http://host.docker.internal:8000/predict \
+                        script: """curl -s -X POST http://localhost:8000/predict \
                         -H 'Content-Type: application/json' \
                         -d '{
                           "fixed_acidity":7.4,
@@ -62,8 +60,8 @@ pipeline {
 
                     echo "Valid Response: ${response}"
 
-                    if (!(response ==~ /.*\d+.*/)) {
-                        error("Prediction is not numeric")
+                    if (!response.contains("prediction")) {
+                        error("Prediction field missing")
                     }
                 }
             }
@@ -72,17 +70,17 @@ pipeline {
         stage('Invalid Inference Test') {
             steps {
                 script {
-                    def response = sh(
-                        script: """curl -s -o /dev/null -w '%{http_code}' -X POST http://host.docker.internal:8000/predict \
+                    def status = sh(
+                        script: """curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/predict \
                         -H 'Content-Type: application/json' \
                         -d '{"fixed_acidity":7.4}'""",
                         returnStdout: true
                     ).trim()
 
-                    echo "Invalid Status Code: ${response}"
+                    echo "Invalid Status Code: ${status}"
 
-                    if (response == "422") {
-                        error("Invalid input did not return expected error")
+                    if (status != "422") {
+                        error("Invalid input did not return expected 422 error")
                     }
                 }
             }
@@ -90,17 +88,17 @@ pipeline {
 
         stage('Stop Container') {
             steps {
-                sh '''
+                sh """
                 docker stop $CONTAINER_NAME || true
                 docker rm $CONTAINER_NAME || true
-                '''
+                """
             }
         }
     }
 
     post {
         always {
-            sh 'docker rm -f $CONTAINER_NAME || true'
+            sh "docker rm -f $CONTAINER_NAME || true"
         }
     }
 }
