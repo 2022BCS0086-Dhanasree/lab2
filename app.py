@@ -23,9 +23,6 @@ class WineFeatures(BaseModel):
     alcohol: float
 
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
     
 @app.post("/predict")
 def predict(f: WineFeatures):
