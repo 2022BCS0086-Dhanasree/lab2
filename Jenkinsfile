@@ -29,7 +29,7 @@ pipeline {
                     timeout(time: 90, unit: 'SECONDS') {
                         waitUntil {
                             def response = sh(
-                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health || true",
+                                script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/ || true",
                                 returnStdout: true
                             ).trim()
                             return (response == "200")
