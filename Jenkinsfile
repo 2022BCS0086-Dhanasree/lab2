@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "dhanasree86/ml-inference-api:latest"
         CONTAINER_NAME = "wine_test_container"
-        DOCKER_NETWORK = "bridge"   // replace with your output
+        DOCKER_NETWORK = "bridge"
     }
 
     stages {
